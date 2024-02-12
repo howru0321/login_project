@@ -9,11 +9,27 @@ const db = mysql.createConnection({
 });
 
 
-async function fetchUser(where, email) {
+async function fetchUser(Column, Value) {
   const insertQuery = 'SELECT * from usertable WHERE ?? = ?';
 
   return new Promise((resolve, reject) => {
-    db.query(insertQuery, [where, email], (error, rows, fields) => {
+    db.query(insertQuery, [Column, Value], (error, rows, fields) => {
+      if (error) {
+        console.error('Error during query execution:', error);
+        reject(error);
+      }
+      else {
+        resolve(rows[0]);
+      }
+    });
+  });
+}
+
+async function fetchUserColumns(ColumnsToSelect, Column, Value) {
+  const insertQuery = 'SELECT ?? from usertable WHERE ?? = ?';
+
+  return new Promise((resolve, reject) => {
+    db.query(insertQuery, [ColumnsToSelect, Column, Value], (error, rows, fields) => {
       if (error) {
         console.error('Error during query execution:', error);
         reject(error);
@@ -41,11 +57,11 @@ async function createUser(email, username, password, type) {
   });
 }
 
-async function removeUser(where, email) {
+async function removeUser(Column, Value) {
   const insertQuery = 'DELETE from usertable WHERE ?? = ?';
 
   return new Promise((resolve, reject) => {
-    db.query(insertQuery, [where, email], (error, rows, fields) => {
+    db.query(insertQuery, [Column, Value], (error, rows, fields) => {
       if (error) {
           console.error('Error during query execution:', error);
           reject(error);
@@ -57,11 +73,11 @@ async function removeUser(where, email) {
   });
 }
 
-async function updateUser(where, email, username) {
+async function updateUsername(Column, Value, username) {
   const insertQuery = 'UPDATE usertable SET username = ? WHERE ?? = ?';
 
   return new Promise((resolve, reject) => {
-    db.query(insertQuery, [username, where, email], (error, rows, fields) => {
+    db.query(insertQuery, [username, Column, Value], (error, rows, fields) => {
       if (error) {
           console.error('Error during query execution:', error);
           reject(error);
@@ -77,7 +93,8 @@ async function updateUser(where, email, username) {
 module.exports = {
   db,
   fetchUser,
+  fetchUserColumns,
   createUser,
   removeUser,
-  updateUser
+  updateUsername
 };

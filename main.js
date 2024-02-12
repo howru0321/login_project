@@ -9,9 +9,10 @@ require('dotenv').config();
 
 var {db,
     fetchUser,
+    fetchUserColumns,
     createUser,
     removeUser,
-    updateUser} = require('./user_db.js');
+    updateUsername} = require('./user_db.js');
 
 const app = express();
 
@@ -99,7 +100,7 @@ app.post('/signup', async (req, res) => {
     
     var user;
     try {
-        user = await fetchUser('email', email);
+        user = await fetchUserColumns(['type'], 'email', email);
     } catch (error) {
         console.error('Error fetching user:', error);
     }
@@ -124,7 +125,7 @@ app.post('/signup', async (req, res) => {
     const hashedPassword = await bcrypt.hash(password, 10);
 
     try {
-        user = await createUser(email, username, hashedPassword, type);
+        await createUser(email, username, hashedPassword, type);
     } catch (error) {
         console.error('Error creating user:', error);
     }
@@ -136,7 +137,7 @@ app.post('/username', async (req, res) => {
     const { email, username } = req.body;
 
     try {
-        user = await updateUser('email', email, username);
+        user = await updateUsername('email', email, username);
     } catch (error) {
         if(error.code === 'ER_DUP_ENTRY'){
             const errorMessage = "duplicateUsername"
@@ -151,32 +152,39 @@ app.post('/username', async (req, res) => {
 
 app.post('/login', async (req, res) => {
     const { email, password } = req.body;
-    var user;
+    var user_UsernameType;
     try {
-        user = await fetchUser('email', email);
+        user_UsernameType = await fetchUserColumns(['username', 'type'], 'email', email);
     } catch (error) {
         console.error('Error fetching user:', error);
     }
 
-    if (!user) {
+    if (!user_UsernameType) {
         res.status(400).send(`not registered email: ${email}`);
         return;
     }
-    if(user.type === "google"){
+    if(user_UsernameType.type === "google"){
         res.status(400).send('Already registered as a member with Google account');
         return;
     }
-    if(user.username === null){
+    if(user_UsernameType.username === null){
         return res.redirect(`/username.html?email=${email}`);
     }
 
-    const matchPassword = await bcrypt.compare(password, user.password);
+    var user_Password;
+    try {
+        user_Password = await fetchUserColumns(['password'], 'email', email);
+    } catch (error) {
+        console.error('Error fetching user:', error);
+    }
+
+    const matchPassword = await bcrypt.compare(password, user_Password.password);
     if (!matchPassword) {
         res.status(400).send('incorrect password');
         return;
     }
 
-    const token = generateToken(user.email);
+    const token = generateToken(email);
     res.cookie(USER_COOKIE_KEY, token);
     res.redirect('/');
 });
@@ -207,16 +215,20 @@ app.get('/google/redirect', async (req, res) => {
 
     var user;
     try {
-        user = await fetchUser('email', email);
+        user = await fetchUserColumns(['username', 'type'], 'email', email);
     } catch (error) {
         console.error('Error fetching user:', error);
     }
 
     if(user){
+        if(user.type !== "google"){
+            res.status(400).send('Already registered as a member');
+            return;
+        }
         if(user.username === null){
             return res.redirect(`/username.html?email=${email}`);
         }
-        const token = generateToken(user.email);
+        const token = generateToken(email);
         res.cookie(USER_COOKIE_KEY, token);
         res.redirect('/');
     }
@@ -226,7 +238,7 @@ app.get('/google/redirect', async (req, res) => {
         const username = null;
  
         try {
-            user = await createUser(email, username, password, type);
+            await createUser(email, username, password, type);
         } catch (error) {
             console.error('Error creating user:', error);
         }
