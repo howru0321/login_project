@@ -1,0 +1,6 @@
+node_modules/
+package-lock.json
+package.json
+users.json
+db_test.js
+.env

@@ -1,0 +1,36 @@
+<html lang="en">
+<head>
+    <title>Sign Up</title>
+</head>
+<body>
+    <form method="POST" action="/signup">
+        <label for="email">Email: </label><input type="text" name="email" />
+        <br/>
+        <label for="password">Password: </label><input type="password" name="password" />
+        <br/>
+        <label for="confirm_password">Confirm Password: </label><input type="password" name="confirm_password" />
+        <br/>
+        <button>Sign Up</button>
+    </form>
+
+    <script>
+        const urlParams = new URLSearchParams(window.location.search);
+        const error = urlParams.get('error');
+
+        if (error === 'duplicateEmail') {
+            const errorMessage = document.createElement('p');
+            errorMessage.style.color = 'red';
+            errorMessage.textContent = 'Duplicate email';
+            document.body.appendChild(errorMessage);
+        }
+        else if (error === 'mismatchPassword') {
+            const errorMessage = document.createElement('p');
+            errorMessage.style.color = 'red';
+            errorMessage.textContent = 'Confirm Password do not match';
+            document.body.appendChild(errorMessage);
+        }
+
+        //history.pushState({}, document.title, '/login.html');
+    </script>
+</body>
+</html>

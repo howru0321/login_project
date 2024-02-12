@@ -1,0 +1,32 @@
+<html lang="en">
+<head>
+    <title>Log In</title>
+</head>
+<body>
+    <script>
+        const urlParams = new URLSearchParams(window.location.search);
+        const email = urlParams.get('email');
+        const error = urlParams.get('error');
+        const duplicateUsername = urlParams.get('duplicateUsername');
+
+        if (error === 'duplicateUsername') {
+            const errorMessage = document.createElement('p');
+            errorMessage.style.color = 'red';
+            errorMessage.textContent = `${duplicateUsername} is already exist`;
+            document.body.appendChild(errorMessage);
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            const emailInput = document.querySelector('input[name="email"]');
+            emailInput.value = email;
+        });
+    </script>
+
+    <form method="POST" action="/username">
+        <input type="hidden" name="email" value="" />
+        <label for="username">Username: </label><input type="text" name="username" />
+        <br/>
+        <button>Log In</button>
+    </form>
+</body>
+</html>
