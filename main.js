@@ -11,8 +11,7 @@ var {db,
     fetchUser,
     createUser,
     removeUser,
-    update_username,
-    update_password } = require('./user_db.js');
+    updateUser} = require('./user_db.js');
 
 const app = express();
 
@@ -68,7 +67,7 @@ app.get('/', async (req, res) => {
     if (req.email) {
         var user;
         try {
-            user = await fetchUser(req.email);
+            user = await fetchUser('email', req.email);
         } catch (error) {
             console.error('Error fetching user:', error);
         }
@@ -100,7 +99,7 @@ app.post('/signup', async (req, res) => {
     
     var user;
     try {
-        user = await fetchUser(email);
+        user = await fetchUser('email', email);
     } catch (error) {
         console.error('Error fetching user:', error);
     }
@@ -137,7 +136,7 @@ app.post('/username', async (req, res) => {
     const { email, username } = req.body;
 
     try {
-        user = await update_username(email, username);
+        user = await updateUser('email', email, username);
     } catch (error) {
         if(error.code === 'ER_DUP_ENTRY'){
             const errorMessage = "duplicateUsername"
@@ -154,7 +153,7 @@ app.post('/login', async (req, res) => {
     const { email, password } = req.body;
     var user;
     try {
-        user = await fetchUser(email);
+        user = await fetchUser('email', email);
     } catch (error) {
         console.error('Error fetching user:', error);
     }
@@ -208,7 +207,7 @@ app.get('/google/redirect', async (req, res) => {
 
     var user;
     try {
-        user = await fetchUser(email);
+        user = await fetchUser('email', email);
     } catch (error) {
         console.error('Error fetching user:', error);
     }
@@ -239,7 +238,7 @@ app.get('/google/redirect', async (req, res) => {
 app.get('/withdraw', async (req, res) => {
     if(req.email){
         try {
-            user = await removeUser(req.email);
+            user = await removeUser('email', req.email);
         } catch (error) {
             console.error('Error removing user:', error);
         }

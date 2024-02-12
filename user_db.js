@@ -9,11 +9,11 @@ const db = mysql.createConnection({
 });
 
 
-async function fetchUser(email) {
-  const insertQuery = 'SELECT * from usertable WHERE email = ?';
+async function fetchUser(where, email) {
+  const insertQuery = 'SELECT * from usertable WHERE ?? = ?';
 
   return new Promise((resolve, reject) => {
-    db.query(insertQuery, [email], (error, rows, fields) => {
+    db.query(insertQuery, [where, email], (error, rows, fields) => {
       if (error) {
         console.error('Error during query execution:', error);
         reject(error);
@@ -41,11 +41,11 @@ async function createUser(email, username, password, type) {
   });
 }
 
-async function removeUser(email) {
-  const insertQuery = 'DELETE from usertable WHERE email = ?';
+async function removeUser(where, email) {
+  const insertQuery = 'DELETE from usertable WHERE ?? = ?';
 
   return new Promise((resolve, reject) => {
-    db.query(insertQuery, [email], (error, rows, fields) => {
+    db.query(insertQuery, [where, email], (error, rows, fields) => {
       if (error) {
           console.error('Error during query execution:', error);
           reject(error);
@@ -57,11 +57,11 @@ async function removeUser(email) {
   });
 }
 
-async function update_username(email, username) {
-  const insertQuery = 'UPDATE usertable SET username = ? WHERE email = ?';
+async function updateUser(where, email, username) {
+  const insertQuery = 'UPDATE usertable SET username = ? WHERE ?? = ?';
 
   return new Promise((resolve, reject) => {
-    db.query(insertQuery, [username, email], (error, rows, fields) => {
+    db.query(insertQuery, [username, where, email], (error, rows, fields) => {
       if (error) {
           console.error('Error during query execution:', error);
           reject(error);
@@ -72,31 +72,6 @@ async function update_username(email, username) {
     });
   });
 }
-async function update_password(email, password) {
-  const hashedPassword = await bcrypt.hash(password, 10);
-
-  const insertQuery = 'UPDATE usertable SET password = ? WHERE email = ?';
-
-  db.query(insertQuery, [hashedPassword, email], (error, rows, fields) => {
-      if (error) {
-          console.error('Error during query execution:', error);
-          throw error;
-      }
-  });
-
-  return new Promise((resolve, reject) => {
-    db.query(insertQuery, [hashedPassword, email], (error, rows, fields) => {
-      if (error) {
-          console.error('Error during query execution:', error);
-          reject(error);
-      }
-      else{
-        resolve();
-      }
-  });
-  });
-
-}
 
 
 module.exports = {
@@ -104,6 +79,5 @@ module.exports = {
   fetchUser,
   createUser,
   removeUser,
-  update_username,
-  update_password
+  updateUser
 };
