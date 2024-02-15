@@ -80,7 +80,7 @@ app.get('/', async (req, res) => {
         }
     }
 
-    return res.redirect(`/login_signup.html`);
+    return res.redirect(`/login.html`);
 });
 
 app.get('/google', (req, res) => {
@@ -111,7 +111,7 @@ app.post('/vertify_email', async (req, res) => {
 });
 
 app.post('/signup', async (req, res) => {
-    const { email, password, confirm_password } = req.body;
+    const { email, password } = req.body;
 
     const type = "general";
     const username = null;
@@ -125,7 +125,7 @@ app.post('/signup', async (req, res) => {
     return res.status(200).send();
 });
 
-app.post('/login', async (req, res) => {
+app.post('/signin', async (req, res) => {
     const { email, password } = req.body;
 
     var user_Password;
@@ -151,7 +151,7 @@ app.get('/google/redirect', async (req, res) => {
 
     //사용자 권한 거부
     if(code === undefined){
-        return res.redirect(`/login_signup.html`);
+        return res.redirect(`/login.html`);
     }
 
     const resp = await axios.post(GOOGLE_TOKEN_URL, {
