@@ -1,10 +1,10 @@
 const express = require('express');
 const path = require('path');
-const fs = require('fs').promises;
 const cookieParser = require('cookie-parser');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const axios = require('axios');
+const bodyParser = require('body-parser');
 require('dotenv').config();
 
 var {db,
@@ -50,8 +50,11 @@ function verifyToken(token) {
 }
 
 app.use(express.static(path.join(__dirname, 'public')));
+//app.use(express.static(path.join(__dirname, 'temp')));
 app.use(cookieParser());
 app.use(express.urlencoded({ extended: true }));
+app.use(bodyParser.urlencoded({extended:true}));
+app.use(bodyParser.json());
 
 app.use((req, res, next) => {
   const token = req.cookies[USER_COOKIE_KEY];
@@ -74,16 +77,11 @@ app.get('/', async (req, res) => {
         }
 
         if (user) {
-            res.status(200).send(`
-                <a href="/logout">Log Out</a>
-                <a href="/withdraw">Withdraw</a>
-                <h1>id: ${user.email}, password: ${user.password}</h1>
-            `);
-            return;
+            return res.redirect(`/main.html`);
         }
     }
 
-    return res.redirect(`/welcome_login.html`);
+    return res.redirect(`/login_signup.html`);
 });
 
 app.get('/google', (req, res) => {
@@ -95,8 +93,8 @@ app.get('/google', (req, res) => {
     res.redirect(url);
 });
 
-app.post('/signup', async (req, res) => {
-    const { email, password, confirm_password } = req.body;
+app.post('/vertify_email', async (req, res) => {
+    const email = req.body.email;
     
     var user;
     try {
@@ -106,19 +104,20 @@ app.post('/signup', async (req, res) => {
     }
 
     if (user) {
-        var errorMessage;
         if(user.type === "general"){
-            errorMessage="duplicateEmail";
+            return res.status(207).send({success: false, message: "Duplicate Email"});
         }
         else if(user.type === "google"){
-            errorMessage="registeredWithGoogle";
+            return res.status(207).send({success: false, message: "Already registered with a Google account"});
         }
-        return res.redirect(`/signup.html?error=${errorMessage}`);
     }
+    else{
+        return res.status(207).send({success: true});
+    }
+});
 
-    if(password!==confirm_password){
-        return res.redirect(`/signup.html?error=mismatchPassword`);
-    }
+app.post('/signup', async (req, res) => {
+    const { email, password, confirm_password } = req.body;
 
     const type = "general";
     const username = null;
@@ -129,25 +128,7 @@ app.post('/signup', async (req, res) => {
     } catch (error) {
         console.error('Error creating user:', error);
     }
-
-    return res.redirect(`/username.html?email=${email}`);
-});
-
-app.post('/username', async (req, res) => {
-    const { email, username } = req.body;
-
-    try {
-        user = await updateUsername('email', email, username);
-    } catch (error) {
-        if(error.code === 'ER_DUP_ENTRY'){
-            const errorMessage = "duplicateUsername"
-            return res.redirect(`/username.html?error=${errorMessage}&email=${email}&duplicateUsername=${username}`);
-        }
-    }
-
-    const token = generateToken(email);
-    res.cookie(USER_COOKIE_KEY, token);
-    res.redirect('/');
+    return res.status(200).send();
 });
 
 app.post('/login', async (req, res) => {
@@ -166,9 +147,6 @@ app.post('/login', async (req, res) => {
     if(user_UsernameType.type === "google"){
         res.status(400).send('Already registered as a member with Google account');
         return;
-    }
-    if(user_UsernameType.username === null){
-        return res.redirect(`/username.html?email=${email}`);
     }
 
     var user_Password;
@@ -194,7 +172,7 @@ app.get('/google/redirect', async (req, res) => {
 
     //사용자 권한 거부
     if(code === undefined){
-        return res.redirect(`/login.html`);
+        return res.redirect(`/login_signup.html`);
     }
 
     const resp = await axios.post(GOOGLE_TOKEN_URL, {
@@ -225,9 +203,6 @@ app.get('/google/redirect', async (req, res) => {
             res.status(400).send('Already registered as a member');
             return;
         }
-        if(user.username === null){
-            return res.redirect(`/username.html?email=${email}`);
-        }
         const token = generateToken(email);
         res.cookie(USER_COOKIE_KEY, token);
         res.redirect('/');
@@ -243,7 +218,7 @@ app.get('/google/redirect', async (req, res) => {
             console.error('Error creating user:', error);
         }
 
-        return res.redirect(`/username.html?email=${email}`);
+        return res.redirect(`/welcome.html`);
     }
 });
 
