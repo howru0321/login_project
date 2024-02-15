@@ -50,7 +50,6 @@ function verifyToken(token) {
 }
 
 app.use(express.static(path.join(__dirname, 'public')));
-//app.use(express.static(path.join(__dirname, 'temp')));
 app.use(cookieParser());
 app.use(express.urlencoded({ extended: true }));
 app.use(bodyParser.urlencoded({extended:true}));
@@ -104,15 +103,10 @@ app.post('/vertify_email', async (req, res) => {
     }
 
     if (user) {
-        if(user.type === "general"){
-            return res.status(207).send({success: false, message: "Duplicate Email"});
-        }
-        else if(user.type === "google"){
-            return res.status(207).send({success: false, message: "Already registered with a Google account"});
-        }
+        return res.status(207).send({duplicate: true, type: user.type});
     }
     else{
-        return res.status(207).send({success: true});
+        return res.status(207).send({duplicate: false});
     }
 });
 
@@ -133,21 +127,6 @@ app.post('/signup', async (req, res) => {
 
 app.post('/login', async (req, res) => {
     const { email, password } = req.body;
-    var user_UsernameType;
-    try {
-        user_UsernameType = await fetchUserColumns(['username', 'type'], 'email', email);
-    } catch (error) {
-        console.error('Error fetching user:', error);
-    }
-
-    if (!user_UsernameType) {
-        res.status(400).send(`not registered email: ${email}`);
-        return;
-    }
-    if(user_UsernameType.type === "google"){
-        res.status(400).send('Already registered as a member with Google account');
-        return;
-    }
 
     var user_Password;
     try {
@@ -158,13 +137,13 @@ app.post('/login', async (req, res) => {
 
     const matchPassword = await bcrypt.compare(password, user_Password.password);
     if (!matchPassword) {
-        res.status(400).send('incorrect password');
+        res.status(401).send();
         return;
     }
 
     const token = generateToken(email);
     res.cookie(USER_COOKIE_KEY, token);
-    res.redirect('/');
+    return res.status(200).send();
 });
 
 app.get('/google/redirect', async (req, res) => {
