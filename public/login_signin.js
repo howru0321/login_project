@@ -5,7 +5,7 @@ const signInButton = document.getElementById('signIn');
 const signIn_email = document.getElementById('signIn_email');
 const signIn_password = document.getElementById('signIn_password');
 
-function seterrorMessage_signIn(errorMessagetext){
+function seterrorMessage(errorMessagetext){
     const existingErrorMessage = document.getElementById('errorMessage_signIn');
     if (existingErrorMessage) {
         existingErrorMessage.remove();
@@ -28,17 +28,17 @@ signInButton.addEventListener('click', async (event) => {
     signIn_password.value='';
 
     try{
-        const res = await axios.post('http://localhost:3000/vertify_email', {
+        const res = await axios.post('/verify_email', {
             email: emailValue
         });
         if(res.data.duplicate){
             if(res.data.type === "google"){
-                seterrorMessage_signIn("Registered with a Google account");
+                seterrorMessage("Registered with a Google account");
                 return;
             }
         }
         else{
-            seterrorMessage_signIn(`Not registered email: ${emailValue}`);
+            seterrorMessage(`Not registered email: ${emailValue}`);
             return;
         }
     }
@@ -47,15 +47,15 @@ signInButton.addEventListener('click', async (event) => {
     }
 
     try{
-        const res = await axios.post('http://localhost:3000/signin', {
+        const res = await axios.post('/signin', {
             email: emailValue,
             password: passwordValue,
         });
-        window.location.href = 'http://localhost:3000/';
+        window.location.href = '/';
     }
     catch(error){
         if(error.response.status === 401){
-            seterrorMessage_signIn("Incorrect Password");
+            seterrorMessage("Incorrect Password");
         }
         console.error(error);
     }

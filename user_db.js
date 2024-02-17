@@ -73,8 +73,8 @@ async function removeUser(Column, Value) {
   });
 }
 
-async function updateUsername(Column, Value, username) {
-  const insertQuery = 'UPDATE usertable SET username = ? WHERE ?? = ?';
+async function updatePassword(Column, Value, username) {
+  const insertQuery = 'UPDATE usertable SET password = ? WHERE ?? = ?';
 
   return new Promise((resolve, reject) => {
     db.query(insertQuery, [username, Column, Value], (error, rows, fields) => {
@@ -96,5 +96,5 @@ module.exports = {
   fetchUserColumns,
   createUser,
   removeUser,
-  updateUsername
+  updatePassword
 };

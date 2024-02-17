@@ -5,6 +5,10 @@ const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const axios = require('axios');
 const bodyParser = require('body-parser');
+const nodemailer = require('nodemailer');
+const redis = require('redis');
+const expressSession = require('express-session');
+const memoryStore = require('memorystore')(expressSession);
 require('dotenv').config();
 
 var {db,
@@ -12,7 +16,7 @@ var {db,
     fetchUserColumns,
     createUser,
     removeUser,
-    updateUsername} = require('./user_db.js');
+    updatePassword} = require('./user_db.js');
 
 const app = express();
 
@@ -23,6 +27,26 @@ const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET;
 const GOOGLE_REDIRECT_URI = process.env.GOOGLE_REDIRECT_URI;
 const GOOGLE_TOKEN_URL = 'https://oauth2.googleapis.com/token';
 const GOOGLE_USERINFO_URL = 'https://www.googleapis.com/oauth2/v2/userinfo';
+const VERIFY_EMAIL = process.env.VERIFY_EMAIL;
+const VERIFY_EMAIL_PASSWORD = process.env.VERIFY_EMAIL_PASSWORD;
+const REDIS_USERNAME = process.env.REDIS_USERNAME;
+const REDIS_PASSWORD = process.env.REDIS_PASSWORD;
+const REDIS_HOST = process.env.REDIS_HOST;
+const REDIS_PORT = process.env.REDIS_PORT;
+const SESSION_SECRET = process.env.SESSION_SECRET;
+
+const redisCli = redis.createClient({
+    url:`redis://${REDIS_USERNAME}:${REDIS_PASSWORD}@${REDIS_HOST}:${REDIS_PORT}/0`,
+    legacyMode: true,
+})
+redisCli.on('connect', () => {
+    console.info('Redis connected!');
+ });
+ redisCli.on('error', (err) => {
+    console.error('Redis Client Error', err);
+ });
+ redisCli.connect().then();
+ const redisClient = redisCli.v4;
 
 
 function generateToken(email) {
@@ -49,12 +73,31 @@ function verifyToken(token) {
     }
 }
 
+function generateRandomString(length) {
+    const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+    let result = '';
+    for (let i = 0; i < length; i++) {
+      result += characters.charAt(Math.floor(Math.random() * characters.length));
+    }
+    return result;
+  }
+
 app.use(express.static(path.join(__dirname, 'public')));
 app.use(cookieParser());
 app.use(express.urlencoded({ extended: true }));
 app.use(bodyParser.urlencoded({extended:true}));
 app.use(bodyParser.json());
-
+app.use(
+    expressSession({
+        secret: SESSION_SECRET,
+        resave: false,
+        saveUninitialized: false,
+        store: new memoryStore({checkPeriod: 60000}),
+        cookie: {
+            mexAge: 60000
+        }
+    })
+)
 app.use((req, res, next) => {
   const token = req.cookies[USER_COOKIE_KEY];
   if (token) {
@@ -92,7 +135,7 @@ app.get('/google', (req, res) => {
     res.redirect(url);
 });
 
-app.post('/vertify_email', async (req, res) => {
+app.post('/verify_email', async (req, res) => {
     const email = req.body.email;
     
     var user;
@@ -108,6 +151,66 @@ app.post('/vertify_email', async (req, res) => {
     else{
         return res.status(207).send({duplicate: false});
     }
+});
+app.post('/send_code', async (req, res) => {
+    const email = req.body.email;
+
+    const authCode = generateRandomString(6);
+
+    await redisClient.set(email, authCode);
+    await redisClient.expire(email, 360);
+    
+    let transporter = nodemailer.createTransport({
+        service: 'gmail',
+        host: 'smtp.gmail.com',
+        port: 587,
+        secure: false,
+        auth: {
+          user: VERIFY_EMAIL,
+          pass: VERIFY_EMAIL_PASSWORD,
+        },
+    });
+
+    await transporter.sendMail({
+        from: `"howserver" <${email}>`,
+        to: email,
+        subject: '[howserver] 회원가입 인증 메일입니다.',
+        html: `<form action= method="POST">
+        <h2 style="margin: 20px 0">[company] ${authCode}</h2>
+        <button style=" background-color: #ff2e00; color:#fff; width: 80px; height:40px; border-radius: 20px; border: none;">가입확인</button>
+      </form>`,
+    });
+
+    return res.status(200).send();
+});
+app.post('/verify_code', async (req, res) => {
+    const email = req.body.email;
+    const code = req.body.code;
+
+    const redisCode = await redisClient.get(email);
+    redisClient.del('email');
+    if(redisCode === code){
+        req.session.email=email;
+        return res.status(200).send({});
+    }
+    else{
+        return res.status(401).send({});
+    }
+});
+app.post('/reset_password', async (req, res) => {
+    const password = req.body.password;
+
+    const email = req.session.email;
+  
+    req.session.destroy(()=>{
+        req.session
+    });
+
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    updatePassword("email",email,hashedPassword);
+
+    return res.status(200).send();
 });
 
 app.post('/signup', async (req, res) => {

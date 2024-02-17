@@ -6,7 +6,7 @@ const signUp_email = document.getElementById('signUp_email');
 const signUp_password = document.getElementById('signUp_password');
 const signUp_confirm_password = document.getElementById('signUp_confirm_password');
 
-function seterrorMessage_signUp(errorMessagetext){
+function seterrorMessage(errorMessagetext){
     const existingErrorMessage = document.getElementById('errorMessage_signUp');
     if (existingErrorMessage) {
         existingErrorMessage.remove();
@@ -31,15 +31,15 @@ signUpButton.addEventListener('click', async (event) => {
     signUp_confirm_password.value='';
 
     try{
-        const res = await axios.post('http://localhost:3000/vertify_email', {
+        const res = await axios.post('/verify_email', {
             email: emailValue
         });
         if(res.data.duplicate){
             if(res.data.type === "general"){
-                seterrorMessage_signUp("Duplicate Email");
+                seterrorMessage("Duplicate Email");
             }
             else if(res.data.type === "google"){
-                seterrorMessage_signUp("Registered with a Google account");
+                seterrorMessage("Registered with a Google account");
             }
             return;
         }
@@ -49,16 +49,16 @@ signUpButton.addEventListener('click', async (event) => {
     }
 
     if(passwordValue !== confirm_passwordValue){
-        seterrorMessage_signUp("Password do not match");
+        seterrorMessage("Password do not match");
         return;
     }
 
     try{
-        const res = await axios.post('http://localhost:3000/signup', {
+        const res = await axios.post('/signup', {
             email: emailValue,
             password: passwordValue,
         });
-        window.location.href = 'http://localhost:3000/welcome.html';
+        window.location.href = '/welcome.html';
     }
     catch(error){
         console.error(`HTTP error! Status: ${error.status}`);
