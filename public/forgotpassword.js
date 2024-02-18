@@ -2,6 +2,8 @@ import axios from 'https://cdn.jsdelivr.net/npm/axios@1.3.5/+esm';
 
 const email = document.getElementById('email');
 const sendCodeButton = document.getElementById('sendCode');
+const Instruction = document.getElementById('instruction');
+const input_container = document.getElementById("input_container");
 
 function seterrorMessage(errorMessagetext){
     const existingErrorMessage = document.getElementById('errorMessage_forgotpassword');
@@ -13,7 +15,10 @@ function seterrorMessage(errorMessagetext){
     errorMessage.style.color = 'red';
     errorMessage.id='errorMessage_forgotpassword';
     errorMessage.textContent = errorMessagetext;
-    sendCodeButton.insertAdjacentElement('afterend', errorMessage);
+
+    const nodesWithType = document.querySelectorAll('input');
+    const lastNodeWithType = nodesWithType[nodesWithType.length - 1];
+    lastNodeWithType.insertAdjacentElement('afterend', errorMessage);
 }
 
 function addcodeInput(){
@@ -22,12 +27,43 @@ function addcodeInput(){
     codeInput.placeholder = 'Enter Code';
     codeInput.name = 'code';
     codeInput.id = 'code';
-    email.insertAdjacentElement('afterend', codeInput);
+    input_container.insertAdjacentElement('afterend', codeInput);
 }
-  
-sendCodeButton.addEventListener('click', async (event) => {
-    event.preventDefault();
 
+function addresendButton(emailValue) {
+    const button = document.createElement("button");
+
+    button.textContent = "ReSend";
+
+    button.onclick = async function() {
+        try{
+            const res = await axios.post('/send_code', {
+                email: emailValue,
+            });
+        }
+        catch(error){
+            console.error(`HTTP error! Status: ${error.status}`);
+        }
+    };
+
+    email.insertAdjacentElement('afterend', button);
+}
+
+function transScreen(emailValue){
+    addcodeInput();
+    email.style.width="75%";
+    addresendButton(emailValue);
+
+    Instruction.innerHTML = 'Enter you code in 5 miniutes'
+    sendCodeButton.innerHTML = 'Continue';
+    const existingErrorMessage = document.getElementById('errorMessage_forgotpassword');
+    if (existingErrorMessage) {
+        existingErrorMessage.remove();
+    }
+    email.disabled = true;
+}
+
+sendCodeButton.addEventListener('click', async () => {
     const emailValue=email.value;
 
     const existingCode = document.getElementById('code');
@@ -51,8 +87,7 @@ sendCodeButton.addEventListener('click', async (event) => {
             console.error(`HTTP error! Status: ${error}`);
         }
 
-        addcodeInput();
-        sendCodeButton.innerHTML = 'Continue';
+        transScreen(emailValue);
     
         try{
             const res = await axios.post('/send_code', {
@@ -66,8 +101,6 @@ sendCodeButton.addEventListener('click', async (event) => {
     }
     else{
         const code = existingCode.value;
-
-        email.disabled = true;
         existingCode.value='';
 
         try{

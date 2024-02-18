@@ -19,9 +19,7 @@ function seterrorMessage(errorMessagetext){
     signUp_confirm_password.insertAdjacentElement('afterend', errorMessage);
 }
 
-signUpButton.addEventListener('click', async (event) => {
-    event.preventDefault();
-
+signUpButton.addEventListener('click', async () => {
     const emailValue=signUp_email.value;
     const passwordValue=signUp_password.value;
     const confirm_passwordValue=signUp_confirm_password.value;

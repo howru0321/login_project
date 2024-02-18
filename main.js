@@ -9,6 +9,7 @@ const nodemailer = require('nodemailer');
 const redis = require('redis');
 const expressSession = require('express-session');
 const memoryStore = require('memorystore')(expressSession);
+const uuid = require('uuid');
 require('dotenv').config();
 
 var {db,
@@ -20,8 +21,10 @@ var {db,
 
 const app = express();
 
-const USER_COOKIE_KEY = 'USER';
-const JWT_SECRET = process.env.JWT_SECRET;
+const ATOKEN_COOKIE_KEY = 'ATOKEN';
+const RTOKEN_COOKIE_KEY = 'RTOKEN';
+const JWT_SECRET_ATOKEN = process.env.JWT_SECRET_ATOKEN;
+const JWT_SECRET_RTOKEN = process.env.JWT_SECRET_RTOKEN;
 const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID;
 const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET;
 const GOOGLE_REDIRECT_URI = process.env.GOOGLE_REDIRECT_URI;
@@ -35,38 +38,66 @@ const REDIS_HOST = process.env.REDIS_HOST;
 const REDIS_PORT = process.env.REDIS_PORT;
 const SESSION_SECRET = process.env.SESSION_SECRET;
 
-const redisCli = redis.createClient({
+const redisCli_cloud = redis.createClient({
     url:`redis://${REDIS_USERNAME}:${REDIS_PASSWORD}@${REDIS_HOST}:${REDIS_PORT}/0`,
     legacyMode: true,
 })
-redisCli.on('connect', () => {
+redisCli_cloud.on('connect', () => {
     console.info('Redis connected!');
  });
- redisCli.on('error', (err) => {
+ redisCli_cloud.on('error', (err) => {
     console.error('Redis Client Error', err);
  });
- redisCli.connect().then();
- const redisClient = redisCli.v4;
+ redisCli_cloud.connect().then();
+ const redisClient_EmailCode = redisCli_cloud.v4;
 
 
-function generateToken(email) {
-    const token = jwt.sign({
-        email,
-        exp: Date.now() + 1000 * 60,
-    }, JWT_SECRET);
+
+const redisCli_local = redis.createClient({ legacyMode: true });
+redisCli_local.on('connect', () => {
+    console.info('Redis_local connected!');
+ });
+ redisCli_local.on('error', (err) => {
+    console.error('Redis_local Client Error', err);
+ });
+ redisCli_local.connect().then();
+ const redisClient_EmailRToken = redisCli_local.v4;
+
+function generateAToken(email) {
+    const token = jwt.sign(
+        {
+            email
+        },
+        JWT_SECRET_ATOKEN,
+        {
+            expiresIn: '1h'
+        });
 
     return token;
 }
+function generateRToken(email) {
+    const rid = generateUniqueId();
+    const token = jwt.sign(
+        {
+            email, 
+            rid
+        },
+        JWT_SECRET_RTOKEN,
+        {
+            expiresIn: '10h'
+        });
 
-function verifyToken(token) {
+    redisClient_EmailRToken.set(email, rid);
+    return token;
+}
+
+function verifyToken(token, JWT_SECRET) {
+    if(!token){
+        return null;
+    }
     try {
         const decoded = jwt.verify(token, JWT_SECRET);
-
-        if (decoded.exp < Date.now()) {
-            return null;
-        }
-
-        return decoded.email;
+        return decoded;
     } catch (error) {
         console.error('Token verification failed:', error.message);
         return null;
@@ -82,30 +113,57 @@ function generateRandomString(length) {
     return result;
   }
 
+function generateUniqueId() {
+  return uuid.v4();
+}
+
+
 app.use(express.static(path.join(__dirname, 'public')));
 app.use(cookieParser());
 app.use(express.urlencoded({ extended: true }));
 app.use(bodyParser.urlencoded({extended:true}));
 app.use(bodyParser.json());
+let maxAge = 5* 60 * 1000;
 app.use(
     expressSession({
         secret: SESSION_SECRET,
         resave: false,
         saveUninitialized: false,
-        store: new memoryStore({checkPeriod: 60000}),
+        store: new memoryStore({checkPeriod: maxAge}),
         cookie: {
-            mexAge: 60000
+            mexAge: maxAge
         }
     })
 )
-app.use((req, res, next) => {
-  const token = req.cookies[USER_COOKIE_KEY];
-  if (token) {
-      const email = verifyToken(token);
-      if (email !== null) {
-          req.email = email;
-      }
-  }
+app.use(async (req, res, next) => {
+    var AToken = null;
+    const incodeAToken = req.cookies[ATOKEN_COOKIE_KEY];
+    if(incodeAToken){
+        AToken = verifyToken(incodeAToken, JWT_SECRET_ATOKEN);
+    }
+    if (AToken) {
+        req.email = AToken.email;
+    }
+    else{
+        var RToken = null;
+        const incodeRToken = req.cookies[RTOKEN_COOKIE_KEY];
+        if(incodeRToken){
+            RToken = verifyToken(incodeRToken, JWT_SECRET_RTOKEN);
+        }
+        if(RToken){
+            const email = RToken.email;
+            const rid = await redisClient_EmailRToken.get(email);
+            if(rid === RToken.rid){
+                console.log("rtoken is going down");
+                const newAToken = generateAToken(email);
+                const newRToken = generateRToken(email);
+
+                res.cookie(RTOKEN_COOKIE_KEY, newRToken);
+                res.cookie(ATOKEN_COOKIE_KEY, newAToken);
+                req.email = email;
+            }
+        }
+    }
   next();
 });
 
@@ -157,8 +215,10 @@ app.post('/send_code', async (req, res) => {
 
     const authCode = generateRandomString(6);
 
-    await redisClient.set(email, authCode);
-    await redisClient.expire(email, 360);
+    await redisClient_EmailCode.set(email, authCode);
+    await redisClient_EmailCode.expire(email, 300);
+
+    req.session.email=email;
     
     let transporter = nodemailer.createTransport({
         service: 'gmail',
@@ -187,10 +247,9 @@ app.post('/verify_code', async (req, res) => {
     const email = req.body.email;
     const code = req.body.code;
 
-    const redisCode = await redisClient.get(email);
-    redisClient.del('email');
+    const redisCode = await redisClient_EmailCode.get(email);
+    await redisClient_EmailCode.del('email');
     if(redisCode === code){
-        req.session.email=email;
         return res.status(200).send({});
     }
     else{
@@ -244,8 +303,11 @@ app.post('/signin', async (req, res) => {
         return;
     }
 
-    const token = generateToken(email);
-    res.cookie(USER_COOKIE_KEY, token);
+    const newAToken = generateAToken(email);
+    const newRToken = generateRToken(email);
+
+    res.cookie(RTOKEN_COOKIE_KEY, newRToken);
+    res.cookie(ATOKEN_COOKIE_KEY, newAToken);
     return res.status(200).send();
 });
 
@@ -285,8 +347,11 @@ app.get('/google/redirect', async (req, res) => {
             res.status(400).send('Already registered as a member');
             return;
         }
-        const token = generateToken(email);
-        res.cookie(USER_COOKIE_KEY, token);
+        const newAToken = generateAToken(email);
+        const newRToken = generateRToken(email);
+
+        res.cookie(RTOKEN_COOKIE_KEY, newRToken);
+        res.cookie(ATOKEN_COOKIE_KEY, newAToken);
         res.redirect('/');
     }
     else{
@@ -311,13 +376,14 @@ app.get('/withdraw', async (req, res) => {
         } catch (error) {
             console.error('Error removing user:', error);
         }
-        res.clearCookie(USER_COOKIE_KEY);
+        res.clearCookie(ATOKEN_COOKIE_KEY);
         res.redirect('/');
     }
 });
 
 app.get('/logout', (req, res) => {
-    res.clearCookie(USER_COOKIE_KEY);
+    res.clearCookie(ATOKEN_COOKIE_KEY);
+    res.clearCookie(RTOKEN_COOKIE_KEY);
     res.redirect('/');
 });
 

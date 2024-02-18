@@ -18,10 +18,8 @@ function seterrorMessage(errorMessagetext){
     signIn_password.insertAdjacentElement('afterend', errorMessage);
 }
   
-signInButton.addEventListener('click', async (event) => {
-    event.preventDefault();
-
-    const emailValue=signIn_email.value;
+signInButton.addEventListener('click', async () => {
+const emailValue=signIn_email.value;
     const passwordValue=signIn_password.value;
 
     signIn_email.value='';
