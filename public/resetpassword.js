@@ -23,7 +23,7 @@ sendCodeButton.addEventListener('click', async (event) => {
     const passwordValue=password.value;
 
     try{
-        const res = await axios.post('/reset_password', {
+        const res = await axios.post('/password/reset', {
             password: passwordValue
         });
         window.location.href = '/welcome.html';

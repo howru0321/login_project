@@ -37,7 +37,7 @@ function addresendButton(emailValue) {
 
     button.onclick = async function() {
         try{
-            const res = await axios.post('/send_code', {
+            const res = await axios.post('/password/recovery', {
                 email: emailValue,
             });
         }
@@ -69,7 +69,7 @@ sendCodeButton.addEventListener('click', async () => {
     const existingCode = document.getElementById('code');
     if (!existingCode) {
         try{
-            const res = await axios.post('/verify_email', {
+            const res = await axios.post('/email/verification', {
                 email: emailValue
             });
             if(!res.data.duplicate){
@@ -90,7 +90,7 @@ sendCodeButton.addEventListener('click', async () => {
         transScreen(emailValue);
     
         try{
-            const res = await axios.post('/send_code', {
+            const res = await axios.post('/password/recovery', {
                 email: emailValue,
             });
         }
@@ -104,7 +104,7 @@ sendCodeButton.addEventListener('click', async () => {
         existingCode.value='';
 
         try{
-            const res = await axios.post('/verify_code', {
+            const res = await axios.post('/password/verification', {
                 email: emailValue,
                 code: code
             });

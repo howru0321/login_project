@@ -29,7 +29,7 @@ signUpButton.addEventListener('click', async () => {
     signUp_confirm_password.value='';
 
     try{
-        const res = await axios.post('/verify_email', {
+        const res = await axios.post('/email/verification', {
             email: emailValue
         });
         if(res.data.duplicate){
@@ -52,7 +52,7 @@ signUpButton.addEventListener('click', async () => {
     }
 
     try{
-        const res = await axios.post('/signup', {
+        const res = await axios.post('/user/signup', {
             email: emailValue,
             password: passwordValue,
         });

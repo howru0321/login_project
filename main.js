@@ -2,14 +2,11 @@ const express = require('express');
 const path = require('path');
 const cookieParser = require('cookie-parser');
 const bcrypt = require('bcrypt');
-const jwt = require('jsonwebtoken');
 const axios = require('axios');
 const bodyParser = require('body-parser');
 const nodemailer = require('nodemailer');
-const redis = require('redis');
 const expressSession = require('express-session');
 const memoryStore = require('memorystore')(expressSession);
-const uuid = require('uuid');
 require('dotenv').config();
 
 var {db,
@@ -17,14 +14,29 @@ var {db,
     fetchUserColumns,
     createUser,
     removeUser,
-    updatePassword} = require('./user_db.js');
+    updatePassword
+} = require('./user_db.js');
+
+var {
+    redisClient_EmailCode,
+    redisClient_EmailRToken
+ } = require('./route/redis.js');
+
+var {
+    generateAToken,
+    generateRToken,
+    verifyToken,
+    generateRandomString
+} = require('./route/function.js')
+
+var userRouter = require('./route/user.js');
 
 const app = express();
 
-const ATOKEN_COOKIE_KEY = 'ATOKEN';
-const RTOKEN_COOKIE_KEY = 'RTOKEN';
-const JWT_SECRET_ATOKEN = process.env.JWT_SECRET_ATOKEN;
-const JWT_SECRET_RTOKEN = process.env.JWT_SECRET_RTOKEN;
+const ATOKEN_COOKIE_KEY = 'ATOKEN';//
+const RTOKEN_COOKIE_KEY = 'RTOKEN';//
+const JWT_SECRET_ATOKEN = process.env.JWT_SECRET_ATOKEN;//
+const JWT_SECRET_RTOKEN = process.env.JWT_SECRET_RTOKEN;//
 const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID;
 const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET;
 const GOOGLE_REDIRECT_URI = process.env.GOOGLE_REDIRECT_URI;
@@ -32,98 +44,14 @@ const GOOGLE_TOKEN_URL = 'https://oauth2.googleapis.com/token';
 const GOOGLE_USERINFO_URL = 'https://www.googleapis.com/oauth2/v2/userinfo';
 const VERIFY_EMAIL = process.env.VERIFY_EMAIL;
 const VERIFY_EMAIL_PASSWORD = process.env.VERIFY_EMAIL_PASSWORD;
-const REDIS_USERNAME = process.env.REDIS_USERNAME;
-const REDIS_PASSWORD = process.env.REDIS_PASSWORD;
-const REDIS_HOST = process.env.REDIS_HOST;
-const REDIS_PORT = process.env.REDIS_PORT;
 const SESSION_SECRET = process.env.SESSION_SECRET;
-
-const redisCli_cloud = redis.createClient({
-    url:`redis://${REDIS_USERNAME}:${REDIS_PASSWORD}@${REDIS_HOST}:${REDIS_PORT}/0`,
-    legacyMode: true,
-})
-redisCli_cloud.on('connect', () => {
-    console.info('Redis connected!');
- });
- redisCli_cloud.on('error', (err) => {
-    console.error('Redis Client Error', err);
- });
- redisCli_cloud.connect().then();
- const redisClient_EmailCode = redisCli_cloud.v4;
-
-
-
-const redisCli_local = redis.createClient({ legacyMode: true });
-redisCli_local.on('connect', () => {
-    console.info('Redis_local connected!');
- });
- redisCli_local.on('error', (err) => {
-    console.error('Redis_local Client Error', err);
- });
- redisCli_local.connect().then();
- const redisClient_EmailRToken = redisCli_local.v4;
-
-function generateAToken(email) {
-    const token = jwt.sign(
-        {
-            email
-        },
-        JWT_SECRET_ATOKEN,
-        {
-            expiresIn: '1h'
-        });
-
-    return token;
-}
-function generateRToken(email) {
-    const rid = generateUniqueId();
-    const token = jwt.sign(
-        {
-            email, 
-            rid
-        },
-        JWT_SECRET_RTOKEN,
-        {
-            expiresIn: '10h'
-        });
-
-    redisClient_EmailRToken.set(email, rid);
-    return token;
-}
-
-function verifyToken(token, JWT_SECRET) {
-    if(!token){
-        return null;
-    }
-    try {
-        const decoded = jwt.verify(token, JWT_SECRET);
-        return decoded;
-    } catch (error) {
-        console.error('Token verification failed:', error.message);
-        return null;
-    }
-}
-
-function generateRandomString(length) {
-    const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-    let result = '';
-    for (let i = 0; i < length; i++) {
-      result += characters.charAt(Math.floor(Math.random() * characters.length));
-    }
-    return result;
-  }
-
-function generateUniqueId() {
-  return uuid.v4();
-}
-
 
 app.use(express.static(path.join(__dirname, 'public')));
 app.use(cookieParser());
 app.use(express.urlencoded({ extended: true }));
 app.use(bodyParser.urlencoded({extended:true}));
 app.use(bodyParser.json());
-let maxAge = 5* 60 * 1000;
+let maxAge = 20;
 app.use(
     expressSession({
         secret: SESSION_SECRET,
@@ -184,33 +112,7 @@ app.get('/', async (req, res) => {
     return res.redirect(`/login.html`);
 });
 
-app.get('/google', (req, res) => {
-    let url = 'https://accounts.google.com/o/oauth2/v2/auth';
-    url += `?client_id=${GOOGLE_CLIENT_ID}`
-    url += `&redirect_uri=${GOOGLE_REDIRECT_URI}`
-    url += '&response_type=code'
-    url += '&scope=email profile'
-    res.redirect(url);
-});
-
-app.post('/verify_email', async (req, res) => {
-    const email = req.body.email;
-    
-    var user;
-    try {
-        user = await fetchUserColumns(['type'], 'email', email);
-    } catch (error) {
-        console.error('Error fetching user:', error);
-    }
-
-    if (user) {
-        return res.status(207).send({duplicate: true, type: user.type});
-    }
-    else{
-        return res.status(207).send({duplicate: false});
-    }
-});
-app.post('/send_code', async (req, res) => {
+app.post('/password/recovery', async (req, res) => {
     const email = req.body.email;
 
     const authCode = generateRandomString(6);
@@ -243,7 +145,7 @@ app.post('/send_code', async (req, res) => {
 
     return res.status(200).send();
 });
-app.post('/verify_code', async (req, res) => {
+app.post('/password/verification', async (req, res) => {
     const email = req.body.email;
     const code = req.body.code;
 
@@ -256,7 +158,7 @@ app.post('/verify_code', async (req, res) => {
         return res.status(401).send({});
     }
 });
-app.post('/reset_password', async (req, res) => {
+app.post('/password/reset', async (req, res) => {
     const password = req.body.password;
 
     const email = req.session.email;
@@ -272,43 +174,13 @@ app.post('/reset_password', async (req, res) => {
     return res.status(200).send();
 });
 
-app.post('/signup', async (req, res) => {
-    const { email, password } = req.body;
-
-    const type = "general";
-    const username = null;
-    const hashedPassword = await bcrypt.hash(password, 10);
-
-    try {
-        await createUser(email, username, hashedPassword, type);
-    } catch (error) {
-        console.error('Error creating user:', error);
-    }
-    return res.status(200).send();
-});
-
-app.post('/signin', async (req, res) => {
-    const { email, password } = req.body;
-
-    var user_Password;
-    try {
-        user_Password = await fetchUserColumns(['password'], 'email', email);
-    } catch (error) {
-        console.error('Error fetching user:', error);
-    }
-
-    const matchPassword = await bcrypt.compare(password, user_Password.password);
-    if (!matchPassword) {
-        res.status(401).send();
-        return;
-    }
-
-    const newAToken = generateAToken(email);
-    const newRToken = generateRToken(email);
-
-    res.cookie(RTOKEN_COOKIE_KEY, newRToken);
-    res.cookie(ATOKEN_COOKIE_KEY, newAToken);
-    return res.status(200).send();
+app.get('/auth/google', (req, res) => {
+    let url = 'https://accounts.google.com/o/oauth2/v2/auth';
+    url += `?client_id=${GOOGLE_CLIENT_ID}`
+    url += `&redirect_uri=${GOOGLE_REDIRECT_URI}`
+    url += '&response_type=code'
+    url += '&scope=email profile'
+    res.redirect(url);
 });
 
 app.get('/google/redirect', async (req, res) => {
@@ -369,23 +241,25 @@ app.get('/google/redirect', async (req, res) => {
     }
 });
 
-app.get('/withdraw', async (req, res) => {
-    if(req.email){
-        try {
-            user = await removeUser('email', req.email);
-        } catch (error) {
-            console.error('Error removing user:', error);
-        }
-        res.clearCookie(ATOKEN_COOKIE_KEY);
-        res.redirect('/');
+app.post('/email/verification', async (req, res) => {
+    const email = req.body.email;
+    
+    var user;
+    try {
+        user = await fetchUserColumns(['type'], 'email', email);
+    } catch (error) {
+        console.error('Error fetching user:', error);
+    }
+
+    if (user) {
+        return res.status(207).send({duplicate: true, type: user.type});
+    }
+    else{
+        return res.status(207).send({duplicate: false});
     }
 });
 
-app.get('/logout', (req, res) => {
-    res.clearCookie(ATOKEN_COOKIE_KEY);
-    res.clearCookie(RTOKEN_COOKIE_KEY);
-    res.redirect('/');
-});
+app.use('/user', userRouter);
 
 app.listen(3000, () => {
     console.log('server is running at 3000');

@@ -19,14 +19,14 @@ function seterrorMessage(errorMessagetext){
 }
   
 signInButton.addEventListener('click', async () => {
-const emailValue=signIn_email.value;
+    const emailValue=signIn_email.value;
     const passwordValue=signIn_password.value;
 
     signIn_email.value='';
     signIn_password.value='';
 
     try{
-        const res = await axios.post('/verify_email', {
+        const res = await axios.post('/email/verification', {
             email: emailValue
         });
         if(res.data.duplicate){
@@ -45,7 +45,7 @@ const emailValue=signIn_email.value;
     }
 
     try{
-        const res = await axios.post('/signin', {
+        const res = await axios.post('/user/signin', {
             email: emailValue,
             password: passwordValue,
         });
