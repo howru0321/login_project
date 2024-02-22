@@ -6,7 +6,7 @@ const JWT_SECRET_RTOKEN = process.env.JWT_SECRET_RTOKEN;
 
 var {
     redisClient_EmailRToken
- } = require('./redis');
+ } = require('../db/redis/redis');
 
 
 function generateAToken(email) {

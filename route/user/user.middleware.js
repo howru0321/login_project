@@ -1,23 +1,20 @@
-const express = require('express');
 const bcrypt = require('bcrypt');
-
-const router = express.Router();
-
-const ATOKEN_COOKIE_KEY = 'ATOKEN';
-const RTOKEN_COOKIE_KEY = 'RTOKEN';
 
 var {
     fetchUserColumns,
     createUser,
     removeUser
-} = require('../user_db.js');
+} = require('../../db/mysql/mysql.js');
 
 var {
     generateAToken,
     generateRToken,
-} = require('./function.js')
+} = require('../function.js')
 
-router.post('/signup', async (req, res) => {
+const ATOKEN_COOKIE_KEY = 'ATOKEN';
+const RTOKEN_COOKIE_KEY = 'RTOKEN';
+
+async function signup (req, res) {
     const { email, password } = req.body;
 
     const type = "general";
@@ -30,9 +27,9 @@ router.post('/signup', async (req, res) => {
         console.error('Error creating user:', error);
     }
     return res.status(200).send();
-});
+}
 
-router.post('/signin', async (req, res) => {
+async function signin (req, res) {
     const { email, password } = req.body;
 
     var user_Password;
@@ -54,10 +51,9 @@ router.post('/signin', async (req, res) => {
     res.cookie(RTOKEN_COOKIE_KEY, newRToken);
     res.cookie(ATOKEN_COOKIE_KEY, newAToken);
     return res.status(200).send();
-});
+}
 
-
-router.get('/withdraw', async (req, res) => {
+async function withdraw (req, res) {
     if(req.email){
         try {
             user = await removeUser('email', req.email);
@@ -65,14 +61,20 @@ router.get('/withdraw', async (req, res) => {
             console.error('Error removing user:', error);
         }
         res.clearCookie(ATOKEN_COOKIE_KEY);
+        res.clearCookie(RTOKEN_COOKIE_KEY);
         res.redirect('/');
     }
-});
+}
 
-router.get('/logout', (req, res) => {
+async function logout (req, res) {
     res.clearCookie(ATOKEN_COOKIE_KEY);
     res.clearCookie(RTOKEN_COOKIE_KEY);
     res.redirect('/');
-});
+}
 
-module.exports = router;
+module.exports = {
+    signup,
+    signin,
+    withdraw,
+    logout
+}

@@ -1,7 +1,7 @@
 import axios from 'https://cdn.jsdelivr.net/npm/axios@1.3.5/+esm';
 
 const password = document.getElementById('password');
-const sendCodeButton = document.getElementById('reset');
+const resetButton = document.getElementById('reset');
 
 function seterrorMessage(errorMessagetext){
     const existingErrorMessage = document.getElementById('errorMessage_signIn');
@@ -17,7 +17,7 @@ function seterrorMessage(errorMessagetext){
 }
 
   
-sendCodeButton.addEventListener('click', async (event) => {
+resetButton.addEventListener('click', async (event) => {
     event.preventDefault();
 
     const passwordValue=password.value;
