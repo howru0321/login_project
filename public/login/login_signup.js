@@ -19,6 +19,12 @@ function seterrorMessage(errorMessagetext){
     signUp_confirm_password.insertAdjacentElement('afterend', errorMessage);
 }
 
+function emailValidChk(email) {
+    const pattern = /^[A-Za-z0-9_\.\-]+@[A-Za-z0-9\-]+\.[A-za-z0-9\-]+/;
+    if(pattern.test(email) === false) { return false; }
+    else { return true; }
+}
+
 signUpButton.addEventListener('click', async () => {
     const emailValue=signUp_email.value;
     const passwordValue=signUp_password.value;
@@ -27,6 +33,11 @@ signUpButton.addEventListener('click', async () => {
     signUp_email.value='';
     signUp_password.value='';
     signUp_confirm_password.value='';
+
+    if(!emailValidChk(emailValue)){
+        seterrorMessage("Invalid Email format");
+        return;
+    }
 
     try{
         const res = await axios.post('/email/verification', {

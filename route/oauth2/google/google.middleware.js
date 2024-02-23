@@ -29,14 +29,7 @@ function redirectToGoogleSignIn (req, res) {
     res.redirect(url);
 }
 
-async function callback (req, res) {
-    const { code } = req.query;
-
-    //사용자 권한 거부
-    if(code === undefined){
-        return res.redirect(`/login/login.html`);
-    }
-
+async function getGoogleEmail(code){
     const resp = await axios.post(GOOGLE_TOKEN_URL, {
         code,
         client_id: GOOGLE_CLIENT_ID,
@@ -50,20 +43,34 @@ async function callback (req, res) {
             Authorization: `Bearer ${resp.data.access_token}`,
         },
     });
+    return resp2.data.email;
+}
 
-    const email=resp2.data.email;
-
-    var user;
+async function findUser(email){
+    var user = null;
     try {
         user = await fetchUserColumns(['username', 'type'], 'email', email);
     } catch (error) {
         console.error('Error fetching user:', error);
     }
 
+    return user;
+}
+
+async function callback (req, res) {
+    const { code } = req.query;
+
+    if(code === undefined){
+        return res.redirect(`/login/login.html`);
+    }
+
+    const email = await getGoogleEmail(code);
+
+    const user = await findUser(email);
+
     if(user){
         if(user.type !== "google"){
-            res.status(400).send('Already registered as a member');
-            return;
+            return res.redirect(`/gotosignin/gotosignin.html`);
         }
         const newAToken = generateAToken(email);
         const newRToken = generateRToken(email);
@@ -73,7 +80,7 @@ async function callback (req, res) {
         res.redirect('/');
     }
     else{
-        const password="OAuth2.0";
+        const password=null;
         const type = "google";
         const username = null;
  
