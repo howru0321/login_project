@@ -34,7 +34,7 @@ async function callback (req, res) {
 
     //사용자 권한 거부
     if(code === undefined){
-        return res.redirect(`/login.html`);
+        return res.redirect(`/login/login.html`);
     }
 
     const resp = await axios.post(GOOGLE_TOKEN_URL, {
@@ -83,7 +83,7 @@ async function callback (req, res) {
             console.error('Error creating user:', error);
         }
 
-        return res.redirect(`/welcome.html`);
+        return res.redirect(`/welcome/welcome.html`);
     }
 }
 

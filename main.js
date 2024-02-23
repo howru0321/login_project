@@ -56,21 +56,34 @@ app.use(
         }
     })
 )
-app.use(async (req, res, next) => {
-    var AToken = null;
-    const incodeAToken = req.cookies[ATOKEN_COOKIE_KEY];
-    if(incodeAToken){
-        AToken = verifyToken(incodeAToken, JWT_SECRET_ATOKEN);
+
+function getToken(req, TOKEN_COOKIE_KEY, JWT_SECRET_TOKEN){
+    var Token = null;
+    const incodeToken = req.cookies[TOKEN_COOKIE_KEY];
+    if(incodeToken){
+        Token = verifyToken(incodeToken, JWT_SECRET_TOKEN);
     }
+    return Token;
+}
+
+async function findUser (email){
+    var user = null;
+    try {
+        user = await fetchUser('email', email);
+    } catch (error) {
+        console.error('Error fetching user:', error);
+    }
+
+    return user;
+}
+
+app.use(async (req, res, next) => {
+    const AToken = getToken(req, ATOKEN_COOKIE_KEY, JWT_SECRET_ATOKEN)
     if (AToken) {
         req.email = AToken.email;
     }
     else{
-        var RToken = null;
-        const incodeRToken = req.cookies[RTOKEN_COOKIE_KEY];
-        if(incodeRToken){
-            RToken = verifyToken(incodeRToken, JWT_SECRET_RTOKEN);
-        }
+        const RToken = getToken(req, RTOKEN_COOKIE_KEY, JWT_SECRET_RTOKEN)
         if(RToken){
             const email = RToken.email;
             const rid = await redisClient_EmailRToken.get(email);
@@ -89,19 +102,14 @@ app.use(async (req, res, next) => {
 
 app.get('/', async (req, res) => {
     if (req.email) {
-        var user;
-        try {
-            user = await fetchUser('email', req.email);
-        } catch (error) {
-            console.error('Error fetching user:', error);
-        }
+        const user = findUser(req.email);
 
         if (user) {
-            return res.redirect(`/main.html`);
+            return res.redirect(`/main/main.html`);
         }
     }
 
-    return res.redirect(`/login.html`);
+    return res.redirect(`/login/login.html`);
 });
 
 app.use('/password', passwordRouter);

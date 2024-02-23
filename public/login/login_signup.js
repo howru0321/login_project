@@ -56,7 +56,7 @@ signUpButton.addEventListener('click', async () => {
             email: emailValue,
             password: passwordValue,
         });
-        window.location.href = '/welcome.html';
+        window.location.href = '/welcome/welcome.html';
     }
     catch(error){
         console.error(`HTTP error! Status: ${error.status}`);

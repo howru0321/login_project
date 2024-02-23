@@ -26,7 +26,7 @@ resetButton.addEventListener('click', async (event) => {
         const res = await axios.post('/password/reset', {
             password: passwordValue
         });
-        window.location.href = '/welcome.html';
+        window.location.href = '/password/passwordchanged/passwordchanged.html';
     }
     catch(error){
         console.error(`HTTP error! Status: ${error.status}`);

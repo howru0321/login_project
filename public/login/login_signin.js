@@ -29,6 +29,7 @@ signInButton.addEventListener('click', async () => {
         const res = await axios.post('/email/verification', {
             email: emailValue
         });
+        console.log(res.data);
         if(res.data.duplicate){
             if(res.data.type === "google"){
                 seterrorMessage("Registered with a Google account");

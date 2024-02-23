@@ -33,8 +33,7 @@ async function sendEmail(email, authCode) {
         to: email,
         subject: '[howserver] 회원가입 인증 메일입니다.',
         html: `<form action= method="POST">
-        <h2 style="margin: 20px 0">[company] ${authCode}</h2>
-        <button style=" background-color: #ff2e00; color:#fff; width: 80px; height:40px; border-radius: 20px; border: none;">가입확인</button>
+        <h2 style="margin: 20px 0">[howserver] ${authCode}</h2>
       </form>`,
     });
 }

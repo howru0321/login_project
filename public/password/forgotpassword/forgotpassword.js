@@ -109,7 +109,7 @@ sendCodeButton.addEventListener('click', async () => {
                 code: code
             });
             if(res){
-                window.location.href = '/resetpassword.html';
+                window.location.href = '/password/resetpassword/resetpassword.html';
             }
         }
         catch(error){
