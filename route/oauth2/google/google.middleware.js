@@ -77,7 +77,7 @@ async function callback (req, res) {
 
         res.cookie(RTOKEN_COOKIE_KEY, newRToken);
         res.cookie(ATOKEN_COOKIE_KEY, newAToken);
-        res.redirect('/');
+        res.redirect('/howserver');
     }
     else{
         const password=null;

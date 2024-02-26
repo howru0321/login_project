@@ -29,7 +29,6 @@ signInButton.addEventListener('click', async () => {
         const res = await axios.post('/email/verification', {
             email: emailValue
         });
-        console.log(res.data);
         if(res.data.duplicate){
             if(res.data.type === "google"){
                 seterrorMessage("Registered with a Google account");
@@ -50,7 +49,7 @@ signInButton.addEventListener('click', async () => {
             email: emailValue,
             password: passwordValue,
         });
-        window.location.href = '/';
+        window.location.href = '/howserver';
     }
     catch(error){
         if(error.response.status === 401){

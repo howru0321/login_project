@@ -63,9 +63,19 @@ function generateUniqueId() {
   return uuid.v4();
 }
 
+function getToken(req, TOKEN_COOKIE_KEY, JWT_SECRET_TOKEN){
+    var Token = null;
+    const incodeToken = req.cookies[TOKEN_COOKIE_KEY];
+    if(incodeToken){
+        Token = verifyToken(incodeToken, JWT_SECRET_TOKEN);
+    }
+    return Token;
+}
+
 module.exports = {
     generateAToken,
     generateRToken,
     verifyToken,
-    generateRandomString
+    generateRandomString,
+    getToken
 }

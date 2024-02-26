@@ -9,10 +9,12 @@ var {
 var {
     generateAToken,
     generateRToken,
+    getToken
 } = require('../function.js')
 
 const ATOKEN_COOKIE_KEY = 'ATOKEN';
 const RTOKEN_COOKIE_KEY = 'RTOKEN';
+const JWT_SECRET_ATOKEN = process.env.JWT_SECRET_ATOKEN;
 
 async function signup (req, res) {
     const { email, password } = req.body;
@@ -54,22 +56,24 @@ async function signin (req, res) {
 }
 
 async function withdraw (req, res) {
-    if(req.email){
+    const AToken = getToken(req, ATOKEN_COOKIE_KEY, JWT_SECRET_ATOKEN);
+    if(AToken){
+        const email = AToken.email;
         try {
-            user = await removeUser('email', req.email);
+            user = await removeUser('email', email);
         } catch (error) {
             console.error('Error removing user:', error);
         }
         res.clearCookie(ATOKEN_COOKIE_KEY);
         res.clearCookie(RTOKEN_COOKIE_KEY);
-        res.redirect('/');
+        res.redirect('/howserver');
     }
 }
 
 async function logout (req, res) {
     res.clearCookie(ATOKEN_COOKIE_KEY);
     res.clearCookie(RTOKEN_COOKIE_KEY);
-    res.redirect('/');
+    res.redirect('/howserver');
 }
 
 module.exports = {

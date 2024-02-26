@@ -34,10 +34,8 @@ app.use(
         }
     })
 )
-
-app.use(mainMid.authToken);
-
-app.get('/', mainMid.controlLoginPage);
+app.use('/howserver', mainMid.authToken);
+app.get('/howserver', mainMid.controlLoginPage);
 
 app.use('/password', passwordRouter);
 app.use('/oauth2/google', oauth2_googleRouter);
