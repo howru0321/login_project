@@ -8,6 +8,10 @@ var {
     redisClient_EmailRToken
  } = require('../db/redis/redis');
 
+var {
+    fetchUserColumns
+} = require('../db/mysql/mysql.js')
+
 
 function generateAToken(email) {
     const token = jwt.sign(
@@ -72,10 +76,30 @@ function getToken(req, TOKEN_COOKIE_KEY, JWT_SECRET_TOKEN){
     return Token;
 }
 
+async function findUser_type(email){
+    var user = null;
+    try {
+        user = await fetchUserColumns(['type'], 'email', email);
+    } catch (error) {
+        if(error.response){
+            console.log(error.response.data);
+            console.log(error.response.status);
+            console.log(error.response.headers);
+        }else if(error.request){
+            console.log(error.request);
+        }else{
+            console.log('Error', error.message);
+        }
+        console.log(error.config);
+    }
+
+    return user;
+}
+
 module.exports = {
     generateAToken,
     generateRToken,
-    verifyToken,
     generateRandomString,
-    getToken
+    getToken,
+    findUser_type
 }

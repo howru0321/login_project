@@ -5,21 +5,7 @@ const sendCodeButton = document.getElementById('sendCode');
 const Instruction = document.getElementById('instruction');
 const input_container = document.getElementById("input_container");
 
-function seterrorMessage(errorMessagetext){
-    const existingErrorMessage = document.getElementById('errorMessage_forgotpassword');
-    if (existingErrorMessage) {
-        existingErrorMessage.remove();
-    }
-
-    const errorMessage = document.createElement('span');
-    errorMessage.style.color = 'red';
-    errorMessage.id='errorMessage_forgotpassword';
-    errorMessage.textContent = errorMessagetext;
-
-    const nodesWithType = document.querySelectorAll('input');
-    const lastNodeWithType = nodesWithType[nodesWithType.length - 1];
-    lastNodeWithType.insertAdjacentElement('afterend', errorMessage);
-}
+import {seterrorMessage} from '../../public.function.js';
 
 function addcodeInput(){
     const codeInput = document.createElement('input');
@@ -42,7 +28,15 @@ function addresendButton(emailValue) {
             });
         }
         catch(error){
-            console.error(`HTTP error! Status: ${error.status}`);
+            if(error.response){
+                console.log(error.response.data);
+                console.log(error.response.status);
+                console.log(error.response.headers);
+            }else if(error.request){
+                console.log(error.request);
+            }else{
+                console.log('Error', error.message);
+            }
         }
     };
 
@@ -56,7 +50,7 @@ function transScreen(emailValue){
 
     Instruction.innerHTML = 'Enter you code in 5 miniutes'
     sendCodeButton.innerHTML = 'Continue';
-    const existingErrorMessage = document.getElementById('errorMessage_forgotpassword');
+    const existingErrorMessage = document.getElementById('errorMessage');
     if (existingErrorMessage) {
         existingErrorMessage.remove();
     }
@@ -73,18 +67,26 @@ sendCodeButton.addEventListener('click', async () => {
                 email: emailValue
             });
             if(!res.data.duplicate){
-                seterrorMessage("Account not found");
+                seterrorMessage("errormessage-forgotpassword", "Account not found");
                 return;
             }
             else{
                 if(res.data.type === "google"){
-                    seterrorMessage("Registered with a Google account");
+                    seterrorMessage("errormessage-forgotpassword", "Registered with a Google account");
                     return;
                 }
             }
         }
         catch(error){
-            console.error(`HTTP error! Status: ${error}`);
+            if(error.response){
+                console.log(error.response.data);
+                console.log(error.response.status);
+                console.log(error.response.headers);
+            }else if(error.request){
+                console.log(error.request);
+            }else{
+                console.log('Error', error.message);
+            }
         }
 
         transScreen(emailValue);
@@ -95,7 +97,16 @@ sendCodeButton.addEventListener('click', async () => {
             });
         }
         catch(error){
-            console.error(`HTTP error! Status: ${error.status}`);
+            if(error.response){
+                console.log(error.response.data);
+                console.log(error.response.status);
+                console.log(error.response.headers);
+            }else if(error.request){
+                console.log(error.request);
+            }else{
+                console.log('Error', error.message);
+            }
+            console.log(error.config);
         }
         return;
     }
@@ -108,14 +119,24 @@ sendCodeButton.addEventListener('click', async () => {
                 email: emailValue,
                 code: code
             });
-            if(res){
+            if(res.data.success){
                 window.location.href = '/password/resetpassword/resetpassword.html';
+            }
+            else{
+                seterrorMessage("errormessage-forgotpassword", res.data.message);
             }
         }
         catch(error){
-            if(error.response.status === 401){
-                seterrorMessage("Incorrect Code");
+            if(error.response){
+                console.log(error.response.data);
+                console.log(error.response.status);
+                console.log(error.response.headers);
+            }else if(error.request){
+                console.log(error.request);
+            }else{
+                console.log('Error', error.message);
             }
+            console.log(error.config);
         }
     }
 });

@@ -7,8 +7,8 @@ var {db,
 var {
     generateAToken,
     generateRToken,
-    verifyToken,
-    getToken
+    getToken,
+    findUser_type
 } = require('./route/function.js');
 
 var {
@@ -19,17 +19,6 @@ const ATOKEN_COOKIE_KEY = 'ATOKEN';
 const RTOKEN_COOKIE_KEY = 'RTOKEN';
 const JWT_SECRET_ATOKEN = process.env.JWT_SECRET_ATOKEN;
 const JWT_SECRET_RTOKEN = process.env.JWT_SECRET_RTOKEN;
-
-async function findUser (email){
-    var user = null;
-    try {
-        user = await fetchUser('email', email);
-    } catch (error) {
-        console.error('Error fetching user:', error);
-    }
-
-    return user;
-}
 
 async function access_token (req) {
     const AToken = getToken(req, ATOKEN_COOKIE_KEY, JWT_SECRET_ATOKEN);
@@ -73,7 +62,7 @@ async function refresh_token(req) {
                 success: false,
                 message: "Refresh token is not in DB."
             }
-            return responseJSON;//409
+            return responseJSON;
         }
     }
     else{
@@ -81,7 +70,7 @@ async function refresh_token(req) {
             success: false,
             message: "Refresh token is invalid."
         }
-        return responseJSON;//401
+        return responseJSON;
     }
 }
 
@@ -106,7 +95,7 @@ async function authToken (req, res, next) {
 async function controlLoginPage(req, res, next){
     const AToken = getToken(req, ATOKEN_COOKIE_KEY, JWT_SECRET_ATOKEN);
     const email = AToken.email;
-    const user = findUser(email);
+    const user = findUser_type(email);
     if (user) {
         return res.redirect(`/main/main.html`);
     }

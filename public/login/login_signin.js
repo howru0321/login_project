@@ -5,18 +5,7 @@ const signInButton = document.getElementById('signIn');
 const signIn_email = document.getElementById('signIn_email');
 const signIn_password = document.getElementById('signIn_password');
 
-function seterrorMessage(errorMessagetext){
-    const existingErrorMessage = document.getElementById('errorMessage_signIn');
-    if (existingErrorMessage) {
-        existingErrorMessage.remove();
-    }
-
-    const errorMessage = document.createElement('span');
-    errorMessage.style.color = 'red';
-    errorMessage.id='errorMessage_signIn';
-    errorMessage.textContent = errorMessagetext;
-    signIn_password.insertAdjacentElement('afterend', errorMessage);
-}
+import {seterrorMessage} from '../public.function.js';
   
 signInButton.addEventListener('click', async () => {
     const emailValue=signIn_email.value;
@@ -31,17 +20,25 @@ signInButton.addEventListener('click', async () => {
         });
         if(res.data.duplicate){
             if(res.data.type === "google"){
-                seterrorMessage("Registered with a Google account");
+                seterrorMessage("errormessage-signin", "Registered with a Google account");
                 return;
             }
         }
         else{
-            seterrorMessage(`Not registered email: ${emailValue}`);
+            seterrorMessage("errormessage-signin", `Not registered email: ${emailValue}`);
             return;
         }
     }
     catch(error){
-        console.error(`HTTP error! Status: ${error.status}`);
+        if(error.response){
+            console.log(error.response.data);
+            console.log(error.response.status);
+            console.log(error.response.headers);
+        }else if(error.request){
+            console.log(error.request);
+        }else{
+            console.log('Error', error.message);
+        }
     }
 
     try{
@@ -49,12 +46,24 @@ signInButton.addEventListener('click', async () => {
             email: emailValue,
             password: passwordValue,
         });
-        window.location.href = '/howserver';
+
+        if(res.data.success){
+            window.location.href = '/howserver';
+        }
+        else{
+            seterrorMessage("errormessage-signin", res.data.message);
+        }
     }
     catch(error){
-        if(error.response.status === 401){
-            seterrorMessage("Incorrect Password");
+        if(error.response){
+            console.log(error.response.data);
+            console.log(error.response.status);
+            console.log(error.response.headers);
+        }else if(error.request){
+            console.log(error.request);
+        }else{
+            console.log('Error', error.message);
         }
-        console.error(error);
+        console.log(error.config);
     }
 });

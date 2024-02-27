@@ -32,9 +32,7 @@ async function sendEmail(email, authCode) {
         from: `"howserver" <${email}>`,
         to: email,
         subject: '[howserver] 회원가입 인증 메일입니다.',
-        html: `<form action= method="POST">
-        <h2 style="margin: 20px 0">[howserver] ${authCode}</h2>
-      </form>`,
+        html: `<h2 style="margin: 20px 0">[howserver] ${authCode}</h2>`,
     });
 }
 
@@ -51,7 +49,11 @@ async function recovery (req, res) {
     
     sendEmail(email, authCode);
 
-    return res.status(200).send();
+    const responseJSON = {
+        success: true,
+        message: ""
+    }
+    return res.status(200).send(responseJSON);
 }
 
 async function verification (req, res) {
@@ -61,10 +63,18 @@ async function verification (req, res) {
     const redisCode = await redisClient_EmailCode.get(email);
     await redisClient_EmailCode.del('email');
     if(redisCode === code){
-        return res.status(200).send({});
+        const responseJSON = {
+            success: true,
+            message: "Code Match"
+        }
+        return res.status(200).send(responseJSON);
     }
     else{
-        return res.status(401).send({});
+        const responseJSON = {
+            success: false,
+            message: "Incorrect Code"
+        }
+        return res.status(200).send(responseJSON);
     }
 }
 
@@ -81,7 +91,11 @@ async function reset (req, res) {
 
     updatePassword("email",email,hashedPassword);
 
-    return res.status(200).send();
+    const responseJSON = {
+        success: true,
+        message: ""
+    }
+    return res.status(200).send(responseJSON);
 }
 
 

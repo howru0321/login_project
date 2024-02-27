@@ -10,13 +10,13 @@ const ATOKEN_COOKIE_KEY = 'ATOKEN';
 const RTOKEN_COOKIE_KEY = 'RTOKEN';
 
 var {
-    fetchUserColumns,
     createUser
 } = require('../../../db/mysql/mysql.js');
 
 var {
     generateAToken,
-    generateRToken
+    generateRToken,
+    findUser_type
 } = require('../../function.js')
 
 
@@ -30,31 +30,48 @@ function redirectToGoogleSignIn (req, res) {
 }
 
 async function getGoogleEmail(code){
-    const resp = await axios.post(GOOGLE_TOKEN_URL, {
+    const authorizationCodeRequest = {
         code,
         client_id: GOOGLE_CLIENT_ID,
         client_secret: GOOGLE_CLIENT_SECRET,
         redirect_uri: GOOGLE_REDIRECT_URI,
         grant_type: 'authorization_code',
-    });
+    };
+    const res_accessToken = await axios.post(GOOGLE_TOKEN_URL, authorizationCodeRequest)
+        .catch(function (error){
+            if(error.response){
+                console.log(error.response.data);
+                console.log(error.response.status);
+                console.log(error.response.headers);
+            }else if(error.request){
+                console.log(error.request);
+            }else{
+                console.log('Error', error.message);
+            }
+            console.log(error.config);
+        });
 
-    const resp2 = await axios.get(GOOGLE_USERINFO_URL, {
+    const userInfoRequest = {
         headers: {
-            Authorization: `Bearer ${resp.data.access_token}`,
+            Authorization: `Bearer ${res_accessToken.data.access_token}`,
         },
-    });
-    return resp2.data.email;
-}
+    };
+    const res_userInfo = await axios.get(GOOGLE_USERINFO_URL, userInfoRequest)
+        .catch(function (error){
+            if(error.response){
+                console.log(error.response.data);
+                console.log(error.response.status);
+                console.log(error.response.headers);
+            }else if(error.request){
+                console.log(error.request);
+            }else{
+                console.log('Error', error.message);
+            }
+            console.log(error.config);
+        });
 
-async function findUser(email){
-    var user = null;
-    try {
-        user = await fetchUserColumns(['username', 'type'], 'email', email);
-    } catch (error) {
-        console.error('Error fetching user:', error);
-    }
 
-    return user;
+    return res_userInfo.data.email;
 }
 
 async function callback (req, res) {
@@ -66,7 +83,7 @@ async function callback (req, res) {
 
     const email = await getGoogleEmail(code);
 
-    const user = await findUser(email);
+    const user = await findUser_type(email);
 
     if(user){
         if(user.type !== "google"){
@@ -86,11 +103,19 @@ async function callback (req, res) {
  
         try {
             await createUser(email, username, password, type);
+            return res.redirect(`/welcome/welcome.html`);
         } catch (error) {
-            console.error('Error creating user:', error);
+            if(error.response){
+                console.log(error.response.data);
+                console.log(error.response.status);
+                console.log(error.response.headers);
+            }else if(error.request){
+                console.log(error.request);
+            }else{
+                console.log('Error', error.message);
+            }
+            console.log(error.config);
         }
-
-        return res.redirect(`/welcome/welcome.html`);
     }
 }
 

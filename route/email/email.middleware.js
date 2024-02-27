@@ -2,21 +2,27 @@ var {
     fetchUserColumns
 } = require('../../db/mysql/mysql.js');
 
+var {
+    findUser_type
+} = require('../function.js')
+
 async function verification (req, res) {
     const email = req.body.email;
-    
-    var user;
-    try {
-        user = await fetchUserColumns(['type'], 'email', email);
-    } catch (error) {
-        console.error('Error fetching user:', error);
-    }
+
+    const user = await findUser_type(email);
 
     if (user) {
-        return res.status(207).send({duplicate: true, type: user.type});
+        const responseJSON = {
+            duplicate: true,
+            type: user.type
+        }
+        return res.status(200).send(responseJSON);
     }
     else{
-        return res.status(207).send({duplicate: false});
+        const responseJSON = {
+            duplicate: false
+        }
+        return res.status(200).send(responseJSON);
     }
 }
 

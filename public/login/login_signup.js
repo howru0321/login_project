@@ -6,18 +6,7 @@ const signUp_email = document.getElementById('signUp_email');
 const signUp_password = document.getElementById('signUp_password');
 const signUp_confirm_password = document.getElementById('signUp_confirm_password');
 
-function seterrorMessage(errorMessagetext){
-    const existingErrorMessage = document.getElementById('errorMessage_signUp');
-    if (existingErrorMessage) {
-        existingErrorMessage.remove();
-    }
-
-    const errorMessage = document.createElement('span');
-    errorMessage.style.color = 'red';
-    errorMessage.id='errorMessage_signUp';
-    errorMessage.textContent = errorMessagetext;
-    signUp_confirm_password.insertAdjacentElement('afterend', errorMessage);
-}
+import {seterrorMessage} from '../public.function.js';
 
 function emailValidChk(email) {
     const pattern = /^[A-Za-z0-9_\.\-]+@[A-Za-z0-9\-]+\.[A-za-z0-9\-]+/;
@@ -35,7 +24,7 @@ signUpButton.addEventListener('click', async () => {
     signUp_confirm_password.value='';
 
     if(!emailValidChk(emailValue)){
-        seterrorMessage("Invalid Email format");
+        seterrorMessage("errormessage-signup", "Invalid Email format");
         return;
     }
 
@@ -45,20 +34,28 @@ signUpButton.addEventListener('click', async () => {
         });
         if(res.data.duplicate){
             if(res.data.type === "general"){
-                seterrorMessage("Duplicate Email");
+                seterrorMessage("errormessage-signup", "Duplicate Email");
             }
             else if(res.data.type === "google"){
-                seterrorMessage("Registered with a Google account");
+                seterrorMessage("errormessage-signup", "Registered with a Google account");
             }
             return;
         }
     }
     catch(error){
-        console.error(`HTTP error! Status: ${error.status}`);
+        if(error.response){
+            console.log(error.response.data);
+            console.log(error.response.status);
+            console.log(error.response.headers);
+        }else if(error.request){
+            console.log(error.request);
+        }else{
+            console.log('Error', error.message);
+        }
     }
 
     if(passwordValue !== confirm_passwordValue){
-        seterrorMessage("Password do not match");
+        seterrorMessage("errormessage-signup", "Password do not match");
         return;
     }
 
@@ -70,6 +67,15 @@ signUpButton.addEventListener('click', async () => {
         window.location.href = '/welcome/welcome.html';
     }
     catch(error){
-        console.error(`HTTP error! Status: ${error.status}`);
+        if(error.response){
+            console.log(error.response.data);
+            console.log(error.response.status);
+            console.log(error.response.headers);
+        }else if(error.request){
+            console.log(error.request);
+        }else{
+            console.log('Error', error.message);
+        }
+        console.log(error.config);
     }
 });

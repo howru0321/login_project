@@ -25,10 +25,19 @@ async function signup (req, res) {
 
     try {
         await createUser(email, username, hashedPassword, type);
+        const responseJSON = {
+            success: true,
+            message: "User created successfully."
+        }
+        return res.status(200).send(responseJSON);
     } catch (error) {
         console.error('Error creating user:', error);
+        const responseJSON = {
+            success: false,
+            message: "Failed to create user."
+        }
+        return res.status(500).send(responseJSON);
     }
-    return res.status(200).send();
 }
 
 async function signin (req, res) {
@@ -43,8 +52,11 @@ async function signin (req, res) {
 
     const matchPassword = await bcrypt.compare(password, user_Password.password);
     if (!matchPassword) {
-        res.status(401).send();
-        return;
+        const responseJSON = {
+            success: false,
+            message: "Incorrect Password"
+        }
+        return res.status(200).send(responseJSON);
     }
 
     const newAToken = generateAToken(email);
@@ -52,7 +64,12 @@ async function signin (req, res) {
 
     res.cookie(RTOKEN_COOKIE_KEY, newRToken);
     res.cookie(ATOKEN_COOKIE_KEY, newAToken);
-    return res.status(200).send();
+
+    const responseJSON = {
+        success: true,
+        message: "Authorized"
+    }
+    return res.status(200).send(responseJSON);
 }
 
 async function withdraw (req, res) {
