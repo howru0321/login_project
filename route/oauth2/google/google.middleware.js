@@ -29,15 +29,15 @@ function redirectToGoogleSignIn (req, res) {
     res.redirect(url);
 }
 
-async function getGoogleEmail(code){
+async function getGoogleAccessToken(code){
     const authorizationCodeRequest = {
         code,
         client_id: GOOGLE_CLIENT_ID,
         client_secret: GOOGLE_CLIENT_SECRET,
         redirect_uri: GOOGLE_REDIRECT_URI,
-        grant_type: 'authorization_code',
+        grant_type: 'authorization_code'
     };
-    const res_accessToken = await axios.post(GOOGLE_TOKEN_URL, authorizationCodeRequest)
+    const res = await axios.post(GOOGLE_TOKEN_URL, authorizationCodeRequest)
         .catch(function (error){
             if(error.response){
                 console.log(error.response.data);
@@ -50,13 +50,19 @@ async function getGoogleEmail(code){
             }
             console.log(error.config);
         });
+    
+    console.log(res.data);
 
+    return res.data.access_token;
+}
+
+async function getGoogleUserInfo(access_token){
     const userInfoRequest = {
         headers: {
-            Authorization: `Bearer ${res_accessToken.data.access_token}`,
+            Authorization: `Bearer ${access_token}`,
         },
     };
-    const res_userInfo = await axios.get(GOOGLE_USERINFO_URL, userInfoRequest)
+    const res = await axios.get(GOOGLE_USERINFO_URL, userInfoRequest)
         .catch(function (error){
             if(error.response){
                 console.log(error.response.data);
@@ -71,17 +77,23 @@ async function getGoogleEmail(code){
         });
 
 
-    return res_userInfo.data.email;
+    return res.data;
 }
 
 async function callback (req, res) {
     const { code } = req.query;
 
+    console.log(req.url);
+
     if(code === undefined){
         return res.redirect(`/login/login.html`);
     }
 
-    const email = await getGoogleEmail(code);
+    const googleAToken = await getGoogleAccessToken(code);
+
+    const userInfo = await getGoogleUserInfo(googleAToken);
+
+    const email = userInfo.email;
 
     const user = await findUser_type(email);
 
