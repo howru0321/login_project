@@ -81,16 +81,18 @@ async function findUser_type(email){
     try {
         user = await fetchUserColumns(['type'], 'email', email);
     } catch (error) {
-        if(error.response){
-            console.log(error.response.data);
-            console.log(error.response.status);
-            console.log(error.response.headers);
-        }else if(error.request){
-            console.log(error.request);
-        }else{
-            console.log('Error', error.message);
-        }
-        console.log(error.config);
+        console.error('Error fatching user:', error);
+    }
+
+    return user;
+}
+
+async function findgoogleaccesstoken(email){
+    var user = null;
+    try {
+        user = await fetchUserColumns(['googleaccesstoken'], 'email', email);
+    } catch (error) {
+        console.error('Error fatching user:', error);
     }
 
     return user;
@@ -101,5 +103,6 @@ module.exports = {
     generateRToken,
     generateRandomString,
     getToken,
-    findUser_type
+    findUser_type,
+    findgoogleaccesstoken
 }

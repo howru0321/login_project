@@ -20,11 +20,11 @@ The primary goal of this project is to foster a comprehensive understanding of f
 
 | Sign In             | Sign up       |
 |---------------------|----------------------|
-| ![Sign In](signin.png) | ![Create Account](signup.png) |
+| ![Sign In](docs/signin.png) | ![Create Account](docs/signup.png) |
 
 || Forgot Password|                      |
 |---------------------|----------------------|----------------------|
-| ![Step 1](enterEmail.png) | ![Step 2](enterCode.png) | ![Step 3](resetPassword.png) |
+| ![Step 1](docs/enterEmail.png) | ![Step 2](docs/enterCode.png) | ![Step 3](docs/resetPassword.png) |
 
 ## Database Usage
 In this project, I leverage three crucial databases to efficiently manage user information and facilitate secure authentication processes.
@@ -40,6 +40,6 @@ In the cloud environment, Redis comes into play for storing temporary values dur
 
 ## Authentication Flow
 ### Token Flow
-![alt text](tokenFlow.png)
+![alt text](docs/tokenFlow.png)
 ### OAuth2.0(google) Flow
-![alt text](oauthFlow.png)
+![alt text](docs/oauthFlow.png)

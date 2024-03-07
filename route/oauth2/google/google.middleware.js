@@ -10,7 +10,8 @@ const ATOKEN_COOKIE_KEY = 'ATOKEN';
 const RTOKEN_COOKIE_KEY = 'RTOKEN';
 
 var {
-    createUser
+    createUser,
+    updateGoogleaccesstoken
 } = require('../../../db/mysql/mysql.js');
 
 var {
@@ -50,8 +51,6 @@ async function getGoogleAccessToken(code){
             }
             console.log(error.config);
         });
-    
-    console.log(res.data);
 
     return res.data.access_token;
 }
@@ -83,8 +82,6 @@ async function getGoogleUserInfo(access_token){
 async function callback (req, res) {
     const { code } = req.query;
 
-    console.log(req.url);
-
     if(code === undefined){
         return res.redirect(`/login/login.html`);
     }
@@ -106,15 +103,16 @@ async function callback (req, res) {
 
         res.cookie(RTOKEN_COOKIE_KEY, newRToken);
         res.cookie(ATOKEN_COOKIE_KEY, newAToken);
+        updateGoogleaccesstoken('email',email, googleAToken);
         res.redirect('/howserver');
     }
     else{
         const password=null;
         const type = "google";
-        const username = null;
+        const googleaccesstoken = googleAToken;
  
         try {
-            await createUser(email, username, password, type);
+            await createUser(email, googleaccesstoken, password, type);
             return res.redirect(`/welcome/welcome.html`);
         } catch (error) {
             if(error.response){

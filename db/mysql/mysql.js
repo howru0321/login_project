@@ -41,11 +41,11 @@ async function fetchUserColumns(ColumnsToSelect, Column, Value) {
   });
 }
 
-async function createUser(email, username, password, type) {
-  const insertQuery = 'INSERT INTO usertable (email, username, password, type) VALUES (?, ?, ?, ?)';
+async function createUser(email, googleaccesstoken, password, type) {
+  const insertQuery = 'INSERT INTO usertable (email, googleaccesstoken, password, type) VALUES (?, ?, ?, ?)';
 
   return new Promise((resolve, reject) => {
-    db.query(insertQuery, [email, username, password, type], (error, rows, fields) => {
+    db.query(insertQuery, [email, googleaccesstoken, password, type], (error, rows, fields) => {
       if (error) {
         console.error('Error during query execution:', error);
         reject(error);
@@ -73,11 +73,27 @@ async function removeUser(Column, Value) {
   });
 }
 
-async function updatePassword(Column, Value, username) {
+async function updatePassword(Column, Value, password) {
   const insertQuery = 'UPDATE usertable SET password = ? WHERE ?? = ?';
 
   return new Promise((resolve, reject) => {
-    db.query(insertQuery, [username, Column, Value], (error, rows, fields) => {
+    db.query(insertQuery, [password, Column, Value], (error, rows, fields) => {
+      if (error) {
+          console.error('Error during query execution:', error);
+          reject(error);
+      }
+      else{
+        resolve();
+      }
+    });
+  });
+}
+
+async function updateGoogleaccesstoken(Column, Value, googleaccesstoken) {
+  const insertQuery = 'UPDATE usertable SET googleaccesstoken = ? WHERE ?? = ?';
+
+  return new Promise((resolve, reject) => {
+    db.query(insertQuery, [googleaccesstoken, Column, Value], (error, rows, fields) => {
       if (error) {
           console.error('Error during query execution:', error);
           reject(error);
@@ -96,5 +112,6 @@ module.exports = {
   fetchUserColumns,
   createUser,
   removeUser,
-  updatePassword
+  updatePassword,
+  updateGoogleaccesstoken
 };
