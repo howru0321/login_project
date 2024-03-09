@@ -31,7 +31,7 @@ async function sendEmail(email, authCode) {
     await transporter.sendMail({
         from: `"howserver" <${email}>`,
         to: email,
-        subject: '[howserver] 회원가입 인증 메일입니다.',
+        subject: '[howserver] 비밀번호 재설정 인증 메일입니다.',
         html: `<h2 style="margin: 20px 0">[howserver] ${authCode}</h2>`,
     });
 }
